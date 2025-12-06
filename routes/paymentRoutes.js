@@ -4,11 +4,11 @@ const { createCheckout } = require('../controllers/paymentController');
 const authMiddleware = require('../middleware/authMiddleware');
 
 // @route   POST /api/payment/checkout
-// @desc    Create Stripe Checkout Session
+// @desc    Create PayMongo Checkout Session
 // @access  Private
 router.post('/checkout', authMiddleware, createCheckout);
 
 // Note: The webhook route is registered in server.js with raw body parser
-// This is because Stripe requires the raw body for signature verification
+// This is because PayMongo requires the raw body for signature verification
 
 module.exports = router;

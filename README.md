@@ -1,216 +1,171 @@
-# MindFlip Memory Card Game - Backend
+# MindFlip Backend
 
-A MERN stack backend for the Memory Card Game with Paywall Themes.
+Backend API for MindFlip Memory Card Game with Premium Themes using PayMongo payments.
 
 ## Tech Stack
 
 - **Node.js** + **Express.js** - Server framework
 - **MongoDB** + **Mongoose** - Database
 - **JWT** - Authentication
-- **Stripe** - Payment processing
+- **PayMongo** - Philippines payment gateway (GCash, GrabPay, Maya, Cards)
 
 ## Quick Start
 
+### 1. Install Dependencies
+
 ```bash
-# Install dependencies
+cd server
 npm install
-
-# Copy environment file and configure
-cp .env.example .env
-
-# Start development server
-npm run dev
 ```
 
-## Environment Variables
+### 2. Configure Environment
 
-Create a `.env` file with the following:
-
-```env
-PORT=5000
-MONGODB_URI=mongodb://localhost:27017/mindflip
-JWT_SECRET=your_jwt_secret_key_here
-STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key
-STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret
-STRIPE_PRICE_ID=price_your_stripe_price_id
-CLIENT_URL=http://localhost:5173
-```
-
-## MongoDB Atlas Production Setup
-
-### 1. Create MongoDB Atlas Account
-1. Go to [MongoDB Atlas](https://www.mongodb.com/atlas)
-2. Create a free account or sign in
-3. Create a new project (e.g., "MindFlip")
-
-### 2. Create a Cluster
-1. Click "Build a Database"
-2. Choose **FREE** tier (M0 Sandbox)
-3. Select your preferred cloud provider and region
-4. Name your cluster (e.g., "mindflip-cluster")
-5. Click "Create Cluster"
-
-### 3. Configure Database Access
-1. Go to **Database Access** in the sidebar
-2. Click "Add New Database User"
-3. Create a user with password authentication
-4. Save the username and password securely
-
-### 4. Configure Network Access
-1. Go to **Network Access** in the sidebar
-2. Click "Add IP Address"
-3. For development: Add your current IP
-4. For production: Add `0.0.0.0/0` (allows all IPs) or your server's IP
-
-### 5. Get Connection String
-1. Go to your cluster and click "Connect"
-2. Choose "Connect your application"
-3. Copy the connection string
-4. Replace `<password>` with your database user's password
-5. Replace `myFirstDatabase` with `mindflip`
-
-Example connection string:
-```
-mongodb+srv://username:password@mindflip-cluster.xxxxx.mongodb.net/mindflip?retryWrites=true&w=majority
-```
-
-### 6. Update Your .env
-```env
-MONGODB_URI=mongodb+srv://username:password@mindflip-cluster.xxxxx.mongodb.net/mindflip?retryWrites=true&w=majority
-```
-
-## Database Scripts
+Copy `.env.example` to `.env` and fill in your values:
 
 ```bash
-# Seed database with test users
-npm run seed
-
-# Create production indexes (run after deploying to production)
-npm run migrate
-
-# Reset database (WARNING: deletes all data)
-npm run reset
+cp .env.example .env
 ```
 
-### Test Accounts (after seeding)
-- **Free user**: test@example.com / password123
-- **Premium user**: premium@example.com / password123
+**Required environment variables:**
+
+| Variable | Description |
+|----------|-------------|
+| `PORT` | Server port (default: 5000) |
+| `MONGODB_URI` | MongoDB connection string |
+| `JWT_SECRET` | Secret key for JWT tokens |
+| `PAYMONGO_SECRET_KEY` | Your PayMongo secret key |
+| `PAYMONGO_WEBHOOK_SECRET` | Webhook signature secret |
+| `PAYMONGO_PRICE_AMOUNT` | Price in centavos (24900 = ₱249.00) |
+| `CLIENT_URL` | Frontend URL for redirects |
+
+### 3. Get PayMongo API Keys
+
+1. Go to [PayMongo Dashboard](https://dashboard.paymongo.com/developers)
+2. Copy your **Secret Key** (starts with `sk_test_` or `sk_live_`)
+3. Create a webhook endpoint and copy the **Webhook Secret**
+
+### 4. Start MongoDB
+
+Make sure MongoDB is running locally or use MongoDB Atlas.
+
+### 5. Run the Server
+
+```bash
+# Development (with auto-reload)
+npm run dev
+
+# Production
+npm start
+```
+
+Server runs on `http://localhost:5000`
 
 ## API Endpoints
 
 ### Authentication
-| Method | Endpoint | Description | Auth Required |
-|--------|----------|-------------|---------------|
-| POST | `/api/auth/register` | Register new user | No |
-| POST | `/api/auth/login` | Login user | No |
-| GET | `/api/user/me` | Get current user | Yes |
+
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| POST | `/api/auth/register` | Register new user | Public |
+| POST | `/api/auth/login` | Login user | Public |
+| GET | `/api/user/me` | Get current user profile | Required |
 
 ### Themes
-| Method | Endpoint | Description | Auth Required |
-|--------|----------|-------------|---------------|
-| GET | `/api/themes/list` | Get all themes | No (but checks premium status if authenticated) |
-| GET | `/api/themes/premium` | Get premium themes | Yes + Premium |
 
-### Payments
-| Method | Endpoint | Description | Auth Required |
-|--------|----------|-------------|---------------|
-| POST | `/api/payment/checkout` | Create Stripe checkout | Yes |
-| POST | `/api/payment/webhook` | Stripe webhook | No (Stripe only) |
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET | `/api/themes/list` | Get all themes with lock status | Optional |
+| GET | `/api/themes/premium` | Get premium themes | Premium Required |
 
-### Health Check
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/health` | API health status |
+### Payments (PayMongo)
 
-## Stripe Setup
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| POST | `/api/payment/checkout` | Create checkout session | Required |
+| POST | `/api/payment/webhook` | Handle PayMongo webhooks | Public (PayMongo only) |
 
-### 1. Create Stripe Account
-1. Go to [Stripe Dashboard](https://dashboard.stripe.com)
-2. Create an account or sign in
+## Available Payment Methods
 
-### 2. Get API Keys
-1. Go to Developers > API Keys
-2. Copy your **Secret key** (starts with `sk_test_`)
-3. Add to `.env` as `STRIPE_SECRET_KEY`
+PayMongo supports the following payment methods in the Philippines:
 
-### 3. Create a Product & Price
-1. Go to Products > Add Product
-2. Name: "Unlock All Themes"
-3. Price: $4.99 (one-time)
-4. Copy the Price ID (starts with `price_`)
-5. Add to `.env` as `STRIPE_PRICE_ID`
+- **GCash** - Popular e-wallet
+- **GrabPay** - Grab's payment service
+- **Maya** (PayMaya) - Digital wallet
+- **Credit/Debit Cards** - Visa, Mastercard
 
-### 4. Setup Webhooks (Local Development)
+## Testing Webhooks Locally
+
+Use ngrok to expose your local server for webhook testing:
+
 ```bash
-# Install Stripe CLI
-# Windows: scoop install stripe
-# Mac: brew install stripe/stripe-cli/stripe
+# Install ngrok from https://ngrok.com/download
 
-# Login to Stripe
-stripe login
+# Start your server
+npm run dev
 
-# Forward webhooks to local server
-stripe listen --forward-to localhost:5000/api/payment/webhook
+# In another terminal, expose port 5000
+ngrok http 5000
 
-# Copy the webhook signing secret (whsec_...) to your .env
+# Copy the HTTPS URL (e.g., https://abc123.ngrok.io)
+# Add webhook endpoint in PayMongo Dashboard:
+# https://abc123.ngrok.io/api/payment/webhook
+
+# Select events: checkout_session.payment.paid
 ```
 
-### 5. Setup Webhooks (Production)
-1. Go to Developers > Webhooks
-2. Add endpoint: `https://your-domain.com/api/payment/webhook`
-3. Select events: `checkout.session.completed`
-4. Copy signing secret to your production environment
+## Frontend Proxy Configuration
+
+The React frontend (Vite) proxies API requests to this backend:
+
+```javascript
+// vite.config.ts
+server: {
+  proxy: {
+    '/api': {
+      target: 'http://localhost:5000',
+      changeOrigin: true,
+    },
+  },
+}
+```
+
+## Scripts
+
+```bash
+npm run dev      # Start development server with nodemon
+npm start        # Start production server
+npm run seed     # Seed database with test data
+npm run reset    # Reset database
+npm run migrate  # Run migrations
+```
 
 ## Project Structure
 
 ```
 mindflip-be/
 ├── config/
-│   └── stripe.js          # Stripe client initialization
+│   └── paymongo.js       # PayMongo API client
 ├── controllers/
-│   ├── authController.js   # Auth logic (register, login, getMe)
-│   ├── themeController.js  # Theme listing logic
-│   └── paymentController.js # Stripe checkout & webhooks
+│   ├── authController.js
+│   ├── themeController.js
+│   └── paymentController.js
 ├── middleware/
-│   ├── authMiddleware.js   # JWT verification
-│   └── requirePremium.js   # Premium user check
+│   ├── authMiddleware.js
+│   └── requirePremium.js
 ├── models/
-│   └── User.js             # User schema with bcrypt
+│   └── User.js
 ├── routes/
 │   ├── authRoutes.js
 │   ├── themeRoutes.js
 │   └── paymentRoutes.js
 ├── scripts/
-│   ├── seed.js             # Database seeding
-│   ├── migrate.js          # Production indexes
-│   └── reset.js            # Database reset
+│   ├── seed.js
+│   ├── reset.js
+│   └── migrate.js
+├── server.js
 ├── .env.example
-├── package.json
-├── README.md
-└── server.js               # App entry point
+└── package.json
 ```
-
-## Deployment
-
-### Deploy to Render.com (Free)
-
-1. Push code to GitHub
-2. Go to [Render](https://render.com) and create account
-3. Create a new Web Service
-4. Connect your GitHub repo
-5. Configure:
-   - **Build Command**: `npm install`
-   - **Start Command**: `npm start`
-6. Add environment variables
-7. Deploy!
-
-### Deploy to Railway
-
-1. Push code to GitHub
-2. Go to [Railway](https://railway.app)
-3. Create new project from GitHub
-4. Add environment variables
-5. Deploy!
 
 ## License
 

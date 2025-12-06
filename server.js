@@ -19,7 +19,7 @@ app.use(cors({
   credentials: true
 }));
 
-// Stripe webhook endpoint MUST be before express.json() 
+// PayMongo webhook endpoint MUST be before express.json() 
 // because it requires raw body for signature verification
 app.post(
   '/api/payment/webhook',
